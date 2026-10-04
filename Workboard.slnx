@@ -5,9 +5,7 @@
     <Project Path="backend/src/Workboard.Application/Workboard.Application.csproj" />
     <Project Path="backend/src/Workboard.Domain/Workboard.Domain.csproj" />
     <Project Path="backend/src/Workboard.Infrastructure/Workboard.Infrastructure.csproj" />
-  </Folder>
-  <Folder Name="/backend/tests/">
-    <Project Path="backend/tests/Workboard.Api.IntegrationTests/Workboard.Api.IntegrationTests.csproj" />
+    <Project Path="backend/tests/Workboard.Api.IntegrationTests/Workboard.Api.Tests.csproj" />
     <Project Path="backend/tests/Workboard.Application.Tests/Workboard.Application.Tests.csproj" />
     <Project Path="backend/tests/Workboard.Domain.Tests/Workboard.Domain.Tests.csproj" />
   </Folder>
