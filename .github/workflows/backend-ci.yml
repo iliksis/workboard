@@ -1,0 +1,28 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - "backend/**"
+      - "contracts/**"
+      - "Workboard.slnx"
+      - "global.json"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths: *paths
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore Workboard.slnx
+      - run: dotnet build Workboard.slnx --no-restore --configuration Release
+      - run: dotnet test Workboard.slnx --no-build --configuration Release
+      - run: dotnet format Workboard.slnx --verify-no-changes --no-restore
+      - name: OpenAPI spec is up to date
+        run: git diff --exit-code -- contracts/openapi

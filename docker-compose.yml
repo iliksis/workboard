@@ -1,0 +1,3 @@
+# Placeholder: the API uses SQLite (a file), so no services are required yet.
+# Add services here (e.g. the API, a reverse proxy, a mail catcher) as needed.
+services: {}
