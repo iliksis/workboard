@@ -2,11 +2,11 @@
   <Folder Name="/backend/" />
   <Folder Name="/backend/src/">
     <Project Path="backend/src/Workboard.Api/Workboard.Api.csproj" />
-    <Project Path="backend/src/Workboard.Application/Workboard.Application.csproj" />
+    <Project Path="backend/src/Workboard.Application/Workboard.Data.csproj" />
     <Project Path="backend/src/Workboard.Domain/Workboard.Domain.csproj" />
     <Project Path="backend/src/Workboard.Infrastructure/Workboard.Infrastructure.csproj" />
     <Project Path="backend/tests/Workboard.Api.IntegrationTests/Workboard.Api.Tests.csproj" />
-    <Project Path="backend/tests/Workboard.Application.Tests/Workboard.Application.Tests.csproj" />
+    <Project Path="backend/tests/Workboard.Application.Tests/Workboard.Data.Tests.csproj" />
     <Project Path="backend/tests/Workboard.Domain.Tests/Workboard.Domain.Tests.csproj" />
   </Folder>
 </Solution>
