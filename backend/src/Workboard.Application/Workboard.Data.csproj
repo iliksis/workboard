@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
@@ -6,6 +6,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Workboard.Domain\Workboard.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="sql\**\*.sql" />
   </ItemGroup>
 </Project>
 
