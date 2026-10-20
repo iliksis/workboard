@@ -13,15 +13,14 @@ namespace Workboard.Data
 
         public bool Update()
         {
-            db.Open();
-            Version current = GetCurrentVersion();
+            Version current = GetLatestVersion();
             bool success = RunMigrationScripts(current);
-            db.Close();
             return success;
         }
 
-        private Version GetCurrentVersion()
+        public Version GetLatestVersion()
         {
+            db.Open();
             Version version = new(0, 0, 0);
             string hasVersionTableScript = $"SELECT name FROM sqlite_master WHERE type = 'table' AND name = '{versionTable}'";
             SqliteCommand command = new(hasVersionTableScript, db);
@@ -48,6 +47,7 @@ namespace Workboard.Data
                 command.ExecuteNonQuery();
             }
 
+            db.Close();
             LogCurrentVersion(version);
             return version;
         }
@@ -71,6 +71,7 @@ namespace Workboard.Data
 
             List<(string Name, Version Version)> scripts = GetMigrationScripts();
 
+            db.Open();
             foreach (var s in scripts.Where(s => s.Version > currentVersion))
             {
                 LogApplyingMigration(s.Name, s.Version);
@@ -92,7 +93,7 @@ namespace Workboard.Data
 
                 tx.Commit();
             }
-
+            db.Close();
             return success;
         }
 
