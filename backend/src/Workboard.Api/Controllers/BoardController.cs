@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Workboard.Data;
+using Workboard.Data.Cache;
 using Workboard.Domain;
 
 namespace Workboard.Api.Controllers

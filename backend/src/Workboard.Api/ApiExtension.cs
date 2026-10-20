@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using System.Reflection;
 using Workboard.Data;
+using Workboard.Data.Cache;
 
 namespace Workboard.Api
 {

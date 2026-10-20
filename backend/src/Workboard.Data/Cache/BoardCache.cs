@@ -1,10 +1,11 @@
 using Microsoft.Data.Sqlite;
 using Workboard.Domain;
 
-namespace Workboard.Data
+namespace Workboard.Data.Cache
 {
     public class BoardCache(ApiContext context)
     {
+
         public async Task<Board> GetBoardAsync(Guid boardId)
         {
             using SqliteConnection db = context.GetDbConnection();
