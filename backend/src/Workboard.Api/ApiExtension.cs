@@ -40,7 +40,7 @@ namespace Workboard.Api
                 return context;
             });
 
-            
+
             builder.Services.AddScoped<BoardCache>(sp =>
             {
                 ApiContext context = sp.GetRequiredService<ApiContext>();
