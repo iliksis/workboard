@@ -6,7 +6,8 @@ namespace Workboard.Api
 {
     internal static class ApiExtension
     {
-        internal static async Task<WebApplicationBuilder> AddApi(this WebApplicationBuilder builder) {
+        internal static Task<WebApplicationBuilder> AddApi(this WebApplicationBuilder builder)
+        {
             string? connectionString = builder.Configuration.GetConnectionString("Default");
             if (string.IsNullOrEmpty(connectionString))
             {
@@ -15,21 +16,32 @@ namespace Workboard.Api
             SqliteConnectionStringBuilder connectionStringBuilder = new(connectionString);
             connectionStringBuilder.DataSource = Path.Combine(builder.Environment.ContentRootPath, connectionStringBuilder.DataSource);
 
-            ApiContextOptions opt = new()
-            {
-                ConnectionString = connectionStringBuilder.ToString()
-            };
-            ApiContext context = new(opt);
-            // don't run db init on doc creation
-            if (Assembly.GetEntryAssembly()?.GetName().Name != "GetDocument.Insider")
-            {
-                await context.InitializeDatabaseAsync();
-            }
-            builder.Services.AddSingleton<ApiContext>(context);
+            using ServiceProvider tempProvider = builder.Logging.Services.BuildServiceProvider();
+            ILoggerFactory loggerFactory = tempProvider.GetRequiredService<ILoggerFactory>();
 
-            BoardCache boardCache = new(context);
-            builder.Services.AddScoped<BoardCache>((_) => boardCache);
-            return builder;
+            SchemaUpdater updater = new(new(connectionString.ToString()), loggerFactory);
+            updater.Update();
+
+            builder.Services.AddSingleton<ApiContext>(sp =>
+            {
+                ILoggerFactory loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                ApiContextOptions opt = new()
+                {
+                    ConnectionString = connectionStringBuilder.ToString(),
+                    LoggerFactory = loggerFactory,
+                };
+                ApiContext context = new(opt);
+                return context;
+            });
+
+            
+            builder.Services.AddScoped<BoardCache>(sp =>
+            {
+                ApiContext context = sp.GetRequiredService<ApiContext>();
+                BoardCache boardCache = new(context);
+                return boardCache;
+            });
+            return Task.FromResult(builder);
         }
     }
 }

@@ -2,6 +2,8 @@ using Workboard.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.AddSimpleConsole();
+
 await builder.AddApi();
 
 builder.Services.AddOpenApi("v1");

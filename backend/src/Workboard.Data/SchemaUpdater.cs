@@ -1,27 +1,28 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 
 namespace Workboard.Data
 {
-    internal static class SchemaUpdater
+    public sealed partial class SchemaUpdater(SqliteConnection db, ILoggerFactory loggerFactory)
     {
+        private readonly ILogger<SchemaUpdater> _logger = loggerFactory.CreateLogger<SchemaUpdater>();
+
         private const string versionTable = "db_version";
         private const string scriptNameStart = "Workboard.Data.sql.";
 
-        internal static bool Update(SqliteConnection db)
+        public bool Update()
         {
             db.Open();
-
-            Version current = GetCurrentVersion(db);
-            bool success = RunMigrationScripts(db, current);
-
+            Version current = GetCurrentVersion();
+            bool success = RunMigrationScripts(current);
             db.Close();
-
             return success;
         }
 
-        private static Version GetCurrentVersion(SqliteConnection db)
+        private Version GetCurrentVersion()
         {
+            Version version = new(0, 0, 0);
             string hasVersionTableScript = $"SELECT name FROM sqlite_master WHERE type = 'table' AND name = '{versionTable}'";
             SqliteCommand command = new(hasVersionTableScript, db);
             SqliteDataReader reader = command.ExecuteReader();
@@ -30,14 +31,15 @@ namespace Workboard.Data
 
             if (hasTable)
             {
-                string lastVersionScript = $"SELECT name FROM '{versionTable}' ORDER BY timestamp LIMIT 1";
+                string lastVersionScript = $"SELECT name FROM '{versionTable}' ORDER BY rowid DESC LIMIT 1";
                 command = new(lastVersionScript, db);
                 reader = command.ExecuteReader();
-                if (reader.HasRows)
+                if (reader.Read())
                 {
-                    string version = reader.GetString(0);
-                    return new(version);
+                    string _version = reader.GetString(0);
+                    version = new(_version);
                 }
+                reader.Close();
             }
             else
             {
@@ -46,7 +48,8 @@ namespace Workboard.Data
                 command.ExecuteNonQuery();
             }
 
-            return new(0, 0, 0);
+            LogCurrentVersion(version);
+            return version;
         }
 
         private static List<(string Name, Version Version)> GetMigrationScripts()
@@ -61,7 +64,7 @@ namespace Workboard.Data
             return scripts;
         }
 
-        private static bool RunMigrationScripts(SqliteConnection db, Version currentVersion)
+        private bool RunMigrationScripts(Version currentVersion)
         {
             bool success = true;
             Assembly asm = typeof(ApiContext).Assembly;
@@ -70,6 +73,7 @@ namespace Workboard.Data
 
             foreach (var s in scripts.Where(s => s.Version > currentVersion))
             {
+                LogApplyingMigration(s.Name, s.Version);
                 using Stream stream = asm.GetManifestResourceStream(s.Name)!;
                 using StreamReader reader = new(stream);
                 string sql = reader.ReadToEnd();
@@ -78,10 +82,11 @@ namespace Workboard.Data
                 SqliteCommand command = new(sql, db, tx);
                 int rows = command.ExecuteNonQuery();
 
-                success = UpdateVersionTable(db, tx, s.Version);
+                success = UpdateVersionTable(tx, s.Version);
                 if (!success)
                 {
                     tx.Rollback();
+                    LogMigrationFailed(s.Name);
                     break;
                 }
 
@@ -91,7 +96,7 @@ namespace Workboard.Data
             return success;
         }
 
-        private static bool UpdateVersionTable(SqliteConnection db, SqliteTransaction tx, Version version)
+        private bool UpdateVersionTable(SqliteTransaction tx, Version version)
         {
             string updateTableScript = $"INSERT INTO '{versionTable}' (name, timestamp) VALUES ('{version}', '{DateTimeOffset.UtcNow}')";
             SqliteCommand command = new(updateTableScript, db, tx);
@@ -104,5 +109,16 @@ namespace Workboard.Data
             string version = fileName.Remove(0, scriptNameStart.Length).Split("-")[0];
             return Version.Parse(version);
         }
+
+        #region logging
+        [LoggerMessage(Level = LogLevel.Information, Message = "Current DB version is {Version}")]
+        private partial void LogCurrentVersion(Version version);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Applying migration {Script} ({Version})")]
+        private partial void LogApplyingMigration(string script, Version version);
+
+        [LoggerMessage(Level = LogLevel.Error, Message = "Migration {Script} failed")]
+        private partial void LogMigrationFailed(string script);
+        #endregion
     }
 }
