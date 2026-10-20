@@ -1,4 +1,4 @@
-namespace Workboard.Application;
+namespace Workboard.Data;
 
 public static class AssemblyMarker;
 

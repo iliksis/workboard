@@ -2,7 +2,9 @@ using Workboard.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
-await builder.AddApi();
+builder.Logging.AddSimpleConsole();
+
+builder.AddApi();
 
 builder.Services.AddOpenApi("v1");
 builder.Services.AddControllers();
