@@ -6,8 +6,14 @@ namespace Workboard.Api
 {
     internal static class ApiExtension
     {
-        internal static Task<WebApplicationBuilder> AddApi(this WebApplicationBuilder builder)
+        internal static WebApplicationBuilder AddApi(this WebApplicationBuilder builder)
         {
+            // skip DI for openapi doc generation
+            if (Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider")
+            {
+                return builder;
+            }
+
             string? connectionString = builder.Configuration.GetConnectionString("Default");
             if (string.IsNullOrEmpty(connectionString))
             {
@@ -41,7 +47,7 @@ namespace Workboard.Api
                 BoardCache boardCache = new(context);
                 return boardCache;
             });
-            return Task.FromResult(builder);
+            return builder;
         }
     }
 }

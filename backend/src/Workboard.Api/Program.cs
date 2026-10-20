@@ -4,7 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.AddSimpleConsole();
 
-await builder.AddApi();
+builder.AddApi();
 
 builder.Services.AddOpenApi("v1");
 builder.Services.AddControllers();
