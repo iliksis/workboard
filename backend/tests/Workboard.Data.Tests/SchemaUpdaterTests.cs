@@ -4,8 +4,8 @@ namespace Workboard.Data.Tests;
 
 public sealed class SchemaUpdaterTests : SqliteTestBase
 {
-    private readonly Version latestVersion = new(0, 0, 1);
-    private const int numberOfScripts = 1;
+    private readonly Version latestVersion = new(0, 0, 2);
+    private const int numberOfScripts = 2;
 
     [Fact]
     public void Update_OnFreshDb_CreatesVersionTable_AndReturnsTrue()

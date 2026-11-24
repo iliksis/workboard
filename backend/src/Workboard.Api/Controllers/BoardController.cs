@@ -8,11 +8,11 @@ namespace Workboard.Api.Controllers
     [ApiController]
     public class BoardController : ControllerBase
     {
-        public BoardController(BoardCache boardCache)
+        public BoardController(WorkspaceCache workspaces)
         {
-            this.boardCache = boardCache;
+            this.workspaces = workspaces;
         }
-        private BoardCache boardCache;
+        private readonly WorkspaceCache workspaces;
 
         [HttpGet]
         public IEnumerable<string> Get()
@@ -21,10 +21,10 @@ namespace Workboard.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<Board> Get(int id)
+        public ActionResult<Workspace> Get(Guid id)
         {
-            Board board = await boardCache.GetBoardAsync(Guid.NewGuid());
-            return board;
+            Workspace? workspace = workspaces.Get(id);
+            return workspace is null ? NotFound() : workspace;
         }
 
         [HttpPost]

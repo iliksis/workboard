@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="sql\**\*.sql" />
+    <InternalsVisibleTo Include="Workboard.Data.Tests" />
   </ItemGroup>
 </Project>
 

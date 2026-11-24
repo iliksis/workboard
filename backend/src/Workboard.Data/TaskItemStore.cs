@@ -1,108 +1,45 @@
 using Microsoft.Data.Sqlite;
-using System.Text;
+using Workboard.Domain;
 
 namespace Workboard.Data
 {
-    public class TaskItemStore(ApiContext context)
+    internal class TaskItemStore(ApiContext context)
     {
-        private const string tableName = "task_items";
+        private const string table = "task_items";
+        private const string columns = "id, project_id, column_id, title, description, sort";
 
-        public TaskItem Create(string title, string description)
+        public TaskItem Create(Guid projectId, Guid? columnId, string title, string? description, float sort = 0)
         {
-            TaskItem item = new(Guid.NewGuid(), title, description);
-
-            using SqliteConnection db = context.GetDbConnection();
-            db.Open();
-
-            SqliteCommand command = ApiContext.CreateCommand(db,
-                $"INSERT INTO {tableName} (id, title, description, created_at, updated_at) VALUES (@id, @title, @description, @created_at, @updated_at)",
-                ("@id", item.Id),
-                ("@title", item.Title),
-                ("@description", item.Description),
-                ("@created_at", DateTimeOffset.UtcNow),
-                ("@updated_at", DateTimeOffset.UtcNow));
-            command.ExecuteNonQuery();
-
-            db.Close();
+            TaskItem item = new(Guid.NewGuid(), projectId, columnId, title, description, sort);
+            context.Execute(
+                $"INSERT INTO {table} (id, project_id, column_id, title, description, sort, created_at, updated_at) VALUES (@id, @project_id, @column_id, @title, @description, @sort, @now, @now)",
+                ("@id", item.Id), ("@project_id", projectId), ("@column_id", columnId), ("@title", title), ("@description", description), ("@sort", sort), ("@now", DateTimeOffset.UtcNow));
             return item;
         }
 
-        public bool DeleteById(Guid id)
+        public bool DeleteById(Guid id) => context.Execute($"DELETE FROM {table} WHERE id = @id", ("@id", id)) > 0;
+
+        public TaskItem? SelectById(Guid id) =>
+            context.Query($"SELECT {columns} FROM {table} WHERE id = @id", Map, ("@id", id)).FirstOrDefault();
+
+        public List<TaskItem> SelectByProject(Guid projectId) =>
+            context.Query($"SELECT {columns} FROM {table} WHERE project_id = @project_id", Map, ("@project_id", projectId));
+
+        public TaskItem? Update(Guid id, TaskItemUpdate update)
         {
-            using SqliteConnection db = context.GetDbConnection();
-            db.Open();
-
-            SqliteCommand command = ApiContext.CreateCommand(db, $"DELETE FROM {tableName} WHERE id = @id", ("@id", id));
-            command.ExecuteNonQuery();
-
-            db.Close();
-            return true;
+            context.Update(table, id, ("title", update.Title), ("description", update.Description), ("sort", update.Sort));
+            return SelectById(id);
         }
 
-        public TaskItem? SelectById(Guid id)
+        /// <summary>Places the task in a column (or none) with a new sort value.</summary>
+        public TaskItem? Move(Guid id, Guid? columnId, float sort)
         {
-            TaskItem? item = null;
-
-            using SqliteConnection db = context.GetDbConnection();
-            db.Open();
-
-            SqliteCommand command = ApiContext.CreateCommand(db, $"SELECT * FROM {tableName} WHERE id = @id LIMIT 1", ("@id", id.ToString()));
-            SqliteDataReader reader = command.ExecuteReader();
-
-            if (reader.Read())
-            {
-                Guid projectId = new(reader.GetString(1));
-                string title = reader.GetString(2);
-                string? description = reader.IsDBNull(3) ? null : reader.GetString(3);
-                float sort = reader.GetFloat(4);
-
-                item = new(id, title, description);
-            }
-
-            db.Close();
-            return item;
+            context.Execute($"UPDATE {table} SET column_id = @column_id, sort = @sort, updated_at = @now WHERE id = @id",
+                ("@id", id), ("@column_id", columnId), ("@sort", sort), ("@now", DateTimeOffset.UtcNow));
+            return SelectById(id);
         }
 
-        public IEnumerable<TaskItem> SelectByIds(IEnumerable<Guid> ids)
-        {
-            IList<TaskItem> items = [];
-
-            using SqliteConnection db = context.GetDbConnection();
-            db.Open();
-
-            bool first = true;
-            List<(string Name, object? Value)> parameters = [];
-            StringBuilder builder = new($"SELECT * FROM {tableName} WHERE id IN (");
-            for (int i = 0; i < ids.Count(); i++)
-            {
-                if (!first) builder.Append(", ");
-                string handler = $"@id{i}";
-                builder.Append(handler);
-                parameters.Add(new(handler, ids.ElementAt(i)));
-                first = false;
-            }
-            SqliteCommand command = ApiContext.CreateCommand(db, builder.ToString(), [.. parameters]);
-            SqliteDataReader reader = command.ExecuteReader();
-
-            while (reader.Read())
-            {
-                Guid id = new(reader.GetString(0));
-                Guid projectId = new(reader.GetString(1));
-                string title = reader.GetString(2);
-                string? description = reader.IsDBNull(3) ? null : reader.GetString(3);
-                float sort = reader.GetFloat(4);
-
-                TaskItem item = new(id, title, description);
-                items.Add(item);
-            }
-
-
-            return items;
-        }
-
-        public TaskItem Update(Guid id, TaskItem item)
-        {
-            throw new NotImplementedException();
-        }
+        private static TaskItem Map(SqliteDataReader r) =>
+            new(r.GetGuid(0), r.GetGuid(1), r.IsDBNull(2) ? null : r.GetGuid(2), r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4), r.GetFloat(5));
     }
 }
