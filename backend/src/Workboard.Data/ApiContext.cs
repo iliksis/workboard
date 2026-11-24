@@ -1,14 +1,24 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using Workboard.Data.Cache;
 
 namespace Workboard.Data
 {
+    internal sealed class StoreSet(ApiContext context)
+    {
+        public WorkspaceStore Workspaces { get; } = new(context);
+        public ProjectStore Projects { get; } = new(context);
+        public ColumnStore Columns { get; } = new(context);
+        public TaskItemStore TaskItems { get; } = new(context);
+    }
+
     public class ApiContext
     {
-        internal WorkspaceStore Workspaces { get; }
-        internal ProjectStore Projects { get; }
-        internal ColumnStore Columns { get; }
-        internal TaskItemStore TaskItems { get; }
+        internal StoreSet Stores { get; }
+        public WorkspaceCache Workspaces { get; }
+        public ProjectCache Projects { get; }
+        public ColumnCache Columns { get; }
+        public TaskItemCache TaskItems { get; }
         internal readonly ILoggerFactory loggerFactory;
         private readonly string connectionString;
 
@@ -18,6 +28,8 @@ namespace Workboard.Data
             // SQLite enforces foreign keys (cascades) per connection, so switch it on for every connection we hand out.
             connectionString = new SqliteConnectionStringBuilder(options.ConnectionString) { ForeignKeys = true }.ToString();
 
+            // Caches only keep the context; they look each other up through it, never in their constructors.
+            Stores = new(this);
             Workspaces = new(this);
             Projects = new(this);
             Columns = new(this);

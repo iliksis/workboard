@@ -14,12 +14,12 @@ namespace Workboard.Data.Tests
         {
             string name = "Workspace Name";
             string description = "Description";
-            Workspace workspace = Context.Workspaces.Create(name, description);
+            Workspace workspace = Context.Stores.Workspaces.Create(name, description);
 
             Assert.Equal(name, workspace.Name);
             Assert.Equal(description, workspace.Description);
             Assert.Equal("Work", workspace.Slug);
-            Assert.Equal(workspace, Context.Workspaces.SelectById(workspace.Id));
+            Assert.Equal(workspace, Context.Stores.Workspaces.SelectById(workspace.Id));
         }
     }
 }

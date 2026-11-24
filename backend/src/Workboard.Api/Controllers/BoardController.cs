@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Workboard.Data.Cache;
+using Workboard.Data;
 using Workboard.Domain;
 
 namespace Workboard.Api.Controllers
@@ -8,11 +8,11 @@ namespace Workboard.Api.Controllers
     [ApiController]
     public class BoardController : ControllerBase
     {
-        public BoardController(WorkspaceCache workspaces)
+        public BoardController(ApiContext context)
         {
-            this.workspaces = workspaces;
+            this.context = context;
         }
-        private readonly WorkspaceCache workspaces;
+        private readonly ApiContext context;
 
         [HttpGet]
         public IEnumerable<string> Get()
@@ -23,7 +23,7 @@ namespace Workboard.Api.Controllers
         [HttpGet("{id}")]
         public ActionResult<Workspace> Get(Guid id)
         {
-            Workspace? workspace = workspaces.Get(id);
+            Workspace? workspace = context.Workspaces.Get(id);
             return workspace is null ? NotFound() : workspace;
         }
 

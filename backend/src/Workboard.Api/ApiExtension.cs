@@ -42,11 +42,6 @@ namespace Workboard.Api
             });
 
 
-            // Singletons: the caches hold the data, so they must outlive a request.
-            builder.Services.AddSingleton<TaskItemCache>();
-            builder.Services.AddSingleton<ColumnCache>();
-            builder.Services.AddSingleton<ProjectCache>();
-            builder.Services.AddSingleton<WorkspaceCache>();
             return builder;
         }
     }

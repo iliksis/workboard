@@ -14,10 +14,10 @@ namespace Workboard.Data.Tests.Cache
         [Fact]
         public void Get_IsServedFromMemory_AfterFirstRead()
         {
-            Workspace workspace = Context.Workspaces.Create("Behind", null); // created behind the cache's back
+            Workspace workspace = Context.Stores.Workspaces.Create("Behind", null); // created behind the cache's back
 
             Workspace? first = Workspaces.Get(workspace.Id);
-            Context.Workspaces.Update(workspace.Id, new WorkspaceUpdate(Name: "Changed"));
+            Context.Stores.Workspaces.Update(workspace.Id, new WorkspaceUpdate(Name: "Changed"));
             Workspace? second = Workspaces.Get(workspace.Id);
 
             Assert.Equal("Behind", first?.Name);
@@ -42,7 +42,7 @@ namespace Workboard.Data.Tests.Cache
 
             Assert.Equal("New", updated?.Description);
             Assert.Same(updated, Workspaces.Get(workspace.Id));
-            Assert.Equal("New", Context.Workspaces.SelectById(workspace.Id)?.Description);
+            Assert.Equal("New", Context.Stores.Workspaces.SelectById(workspace.Id)?.Description);
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace Workboard.Data.Tests.Cache
             Projects.Clear();
 
             IReadOnlyList<Project> active = Projects.GetByWorkspace(workspace.Id);
-            Context.Projects.Create(workspace.Id, "Behind", null); // not visible: parent already loaded
+            Context.Stores.Projects.Create(workspace.Id, "Behind", null); // not visible: parent already loaded
             IReadOnlyList<Project> all = Projects.GetByWorkspace(workspace.Id, includeArchived: true);
 
             Assert.Equal([project.Id], active.Select(p => p.Id));

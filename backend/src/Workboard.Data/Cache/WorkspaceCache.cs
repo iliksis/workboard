@@ -2,12 +2,12 @@ using Workboard.Domain;
 
 namespace Workboard.Data.Cache
 {
-    public sealed class WorkspaceCache(ApiContext context, ProjectCache projects)
+    public sealed class WorkspaceCache(ApiContext context)
         : EntityCache<Workspace>(w => w.Id, _ => Guid.Empty)
     {
         private readonly Dictionary<string, Guid> idsBySlug = new(StringComparer.OrdinalIgnoreCase);
 
-        public Workspace? Get(Guid id) => Track(GetOrLoad(id, context.Workspaces.SelectById));
+        public Workspace? Get(Guid id) => Track(GetOrLoad(id, context.Stores.Workspaces.SelectById));
 
         public Workspace? GetBySlug(string slug)
         {
@@ -17,7 +17,7 @@ namespace Workboard.Data.Cache
                 {
                     return Get(id);
                 }
-                Workspace? workspace = context.Workspaces.SelectBySlug(slug);
+                Workspace? workspace = context.Stores.Workspaces.SelectBySlug(slug);
                 if (workspace is not null)
                 {
                     Put(workspace);
@@ -31,7 +31,7 @@ namespace Workboard.Data.Cache
         {
             lock (Gate)
             {
-                Workspace workspace = context.Workspaces.Create(name, description);
+                Workspace workspace = context.Stores.Workspaces.Create(name, description);
                 Put(workspace);
                 idsBySlug[workspace.Slug] = workspace.Id;
                 return workspace;
@@ -43,7 +43,7 @@ namespace Workboard.Data.Cache
             lock (Gate)
             {
                 Forget(id);
-                Workspace? updated = context.Workspaces.Update(id, update);
+                Workspace? updated = context.Stores.Workspaces.Update(id, update);
                 if (updated is not null)
                 {
                     Put(updated);
@@ -58,11 +58,11 @@ namespace Workboard.Data.Cache
             lock (Gate)
             {
                 // Load the projects first: the database cascade removes them, and their children, with the workspace.
-                IReadOnlyList<Project> workspaceProjects = projects.GetByWorkspace(id, includeArchived: true);
-                bool deleted = context.Workspaces.DeleteById(id);
+                IReadOnlyList<Project> workspaceProjects = context.Projects.GetByWorkspace(id, includeArchived: true);
+                bool deleted = context.Stores.Workspaces.DeleteById(id);
                 Forget(id);
                 Remove(id);
-                projects.EvictWorkspace(id, workspaceProjects);
+                context.Projects.EvictWorkspace(id, workspaceProjects);
                 return deleted;
             }
         }

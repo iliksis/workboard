@@ -2,20 +2,20 @@ using Workboard.Domain;
 
 namespace Workboard.Data.Cache
 {
-    public sealed class ProjectCache(ApiContext context, ColumnCache columns, TaskItemCache tasks)
+    public sealed class ProjectCache(ApiContext context)
         : EntityCache<Project>(p => p.Id, p => p.WorkspaceId, Comparer<Project>.Create((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase)))
     {
-        public Project? Get(Guid id) => GetOrLoad(id, context.Projects.SelectById);
+        public Project? Get(Guid id) => GetOrLoad(id, context.Stores.Projects.SelectById);
 
         /// <summary>Archived projects are cached too; they are only filtered out of this list by default.</summary>
         public IReadOnlyList<Project> GetByWorkspace(Guid workspaceId, bool includeArchived = false) =>
-            [.. GetChildren(workspaceId, context.Projects.SelectByWorkspace).Where(p => includeArchived || !p.IsArchived)];
+            [.. GetChildren(workspaceId, context.Stores.Projects.SelectByWorkspace).Where(p => includeArchived || !p.IsArchived)];
 
         public Project Create(Guid workspaceId, string name, string? description)
         {
             lock (Gate)
             {
-                Project project = context.Projects.Create(workspaceId, name, description);
+                Project project = context.Stores.Projects.Create(workspaceId, name, description);
                 Put(project);
                 return project;
             }
@@ -25,7 +25,7 @@ namespace Workboard.Data.Cache
         {
             lock (Gate)
             {
-                Project? updated = context.Projects.Update(id, update);
+                Project? updated = context.Stores.Projects.Update(id, update);
                 if (updated is null)
                 {
                     Remove(id);
@@ -42,10 +42,10 @@ namespace Workboard.Data.Cache
         {
             lock (Gate)
             {
-                bool deleted = context.Projects.DeleteById(id);
+                bool deleted = context.Stores.Projects.DeleteById(id);
                 Remove(id);
-                columns.EvictByParent(id);
-                tasks.EvictByParent(id);
+                context.Columns.EvictByParent(id);
+                context.TaskItems.EvictByParent(id);
                 return deleted;
             }
         }
@@ -57,8 +57,8 @@ namespace Workboard.Data.Cache
             {
                 foreach (Project project in workspaceProjects)
                 {
-                    columns.EvictByParent(project.Id);
-                    tasks.EvictByParent(project.Id);
+                    context.Columns.EvictByParent(project.Id);
+                    context.TaskItems.EvictByParent(project.Id);
                 }
                 EvictByParent(workspaceId);
             }

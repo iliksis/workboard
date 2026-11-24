@@ -7,6 +7,8 @@ namespace Workboard.Data.Cache
     /// Assumes a single API process owns the database; there is no expiry, so edits made to the SQLite
     /// file behind the cache's back are only seen after a restart (or <see cref="Clear"/>).
     /// Hot reads by id are lock-free; index reads and every write take <see cref="Gate"/>.
+    /// Lock order is downward only (workspace, project, column, task): a cache may call a cache below it
+    /// while holding its own lock, but must read a cache above it (e.g. a task reading its column) before taking its own.
     /// </summary>
     public abstract class EntityCache<T>(Func<T, Guid> idOf, Func<T, Guid> parentOf, IComparer<T>? order = null) where T : class
     {
