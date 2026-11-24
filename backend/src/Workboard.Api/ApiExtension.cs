@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using System.Reflection;
 using Workboard.Data;
+using Workboard.Data.Cache;
 
 namespace Workboard.Api
 {
@@ -41,12 +42,6 @@ namespace Workboard.Api
             });
 
 
-            builder.Services.AddScoped<BoardCache>(sp =>
-            {
-                ApiContext context = sp.GetRequiredService<ApiContext>();
-                BoardCache boardCache = new(context);
-                return boardCache;
-            });
             return builder;
         }
     }
